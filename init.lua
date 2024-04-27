@@ -98,6 +98,7 @@ vim.g.maplocalleader = ' '
 --  For more options, you can see `:help option-list`
 
 -- Make line numbers default
+vim.g.terminal_emulator = 'bash'
 vim.opt.number = true
 -- You can also add relative line numbers, for help with jumping.
 --  Experiment for yourself to see if you like it!
@@ -108,6 +109,8 @@ vim.opt.mouse = 'a'
 
 -- Don't show the mode, since it's already in status line
 vim.opt.showmode = false
+
+vim.api.nvim_set_keymap('n', '<C-/>', ':<C-u>normal gcc<CR>', { noremap = true, silent = true })
 
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
@@ -223,6 +226,63 @@ vim.opt.rtp:prepend(lazypath)
 require 'nvim-tree-config'
 require('lazy').setup {
   {
+    -- harpoon
+    {
+      'ThePrimeagen/harpoon',
+      branch = 'harpoon2',
+      dependencies = {
+        'nvim-lua/plenary.nvim',
+      },
+      config = function()
+        local harpoon = require 'harpoon'
+        harpoon:setup()
+        vim.keymap.set('n', '<leader>a', function()
+          harpoon:list():add()
+        end)
+        vim.keymap.set('n', '<C-e>', function()
+          harpoon.ui:toggle_quick_menu(harpoon:list())
+        end)
+
+        vim.keymap.set('n', '<C-h>', function()
+          harpoon:list():select(1)
+        end)
+        vim.keymap.set('n', '<C-t>', function()
+          harpoon:list():select(2)
+        end)
+        vim.keymap.set('n', '<C-n>', function()
+          harpoon:list():select(3)
+        end)
+        vim.keymap.set('n', '<C-s>', function()
+          harpoon:list():select(4)
+        end)
+
+        -- Toggle previous & next buffers stored within Harpoon list
+        vim.keymap.set('n', '<C-S-P>', function()
+          harpoon:list():prev()
+        end)
+        vim.keymap.set('n', '<C-S-N>', function()
+          harpoon:list():next()
+        end)
+      end,
+    },
+    'eldritch-theme/eldritch.nvim',
+    {
+      'simrat39/rust-tools.nvim',
+      config = function()
+        local rt = require 'rust-tools'
+
+        rt.setup {
+          server = {
+            on_attach = function(_, bufnr)
+              -- Hover actions
+              vim.keymap.set('n', '<C-space>', rt.hover_actions.hover_actions, { buffer = bufnr })
+              -- Code action groups
+              vim.keymap.set('n', '<Leader>a', rt.code_action_group.code_action_group, { buffer = bufnr })
+            end,
+          },
+        }
+      end,
+    },
     'kdheepak/lazygit.nvim',
     cmd = {
       'LazyGit',
@@ -271,9 +331,8 @@ require('lazy').setup {
   --  This is equivalent to:
   --    require('Comment').setup({})
 
-  -- -- "gc" to comment visual regions/lines
-  -- { 'numToStr/Comment.nvim', opts = {} },
-  { 'tpope/vim-commentary' },
+  -- "gc" to comment visual regions/lines
+  { 'numToStr/Comment.nvim', opts = {} },
   { 'AlessandroYorba/Sierra' },
   { 'github/copilot.vim' },
   {
@@ -465,11 +524,12 @@ require('lazy').setup {
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
       { 'j-hui/fidget.nvim', opts = {} },
     },
+    opts = {
+      servers = {
+        gleam = { cmd = { 'gleam', 'lsp' }, mason = false },
+      },
+    },
     config = function()
-      local lspconfig = require 'lspconfig'
-      lspconfig.gleamls.setup {
-        cmd = { 'gleam lsp' },
-      }
       -- Brief Aside: **What is LSP?**
       --
       -- LSP is an acronym you've probably heard, but might not understand what it is.
@@ -592,8 +652,9 @@ require('lazy').setup {
       local servers = {
         -- clangd = {},
         gopls = {},
+
         -- pyright = {},
-        -- rust_analyzer = {},
+        -- sumneko_lua
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -602,7 +663,6 @@ require('lazy').setup {
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
         --
-
         lua_ls = {
           -- cmd = {...},
           -- filetypes { ...},
@@ -780,12 +840,12 @@ require('lazy').setup {
     -- change the command in the config to whatever the name of that colorscheme is
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`
-    'Sierra',
+    'AlessandroYorba/Sierra',
     lazy = false, -- make sure we load this during startup if it is your main colorscheme
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
       -- Load the colorscheme here
-      vim.cmd.colorscheme 'mellifluous'
+      vim.cmd.colorscheme 'sierra'
 
       -- You can configure highlights by doing something like
       vim.cmd.hi 'Comment gui=none'
@@ -844,7 +904,7 @@ require('lazy').setup {
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup {
-        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc' },
+        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'gleam' },
         -- Autoinstall languages that are not installed
         auto_install = true,
         highlight = { enable = true },
